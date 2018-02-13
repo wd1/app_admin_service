@@ -1,0 +1,288 @@
+{% extends "index.html" %}
+{% block body %}
+{% if user %}
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#"><img src="{{ user.avatar }}" width="30" height="30"></a>
+  <a class="navbar-brand" href="#">{{ user.toshi_id }}</a>
+</nav>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col">
+      <table class="table table-hover table-responsive">
+        <tbody>
+          <tr>
+            <th>Userame</th>
+            <td>@{{ user.username }}</td>
+          </tr>
+          <tr>
+            <th>Reputation</th>
+            <td>
+              {% if user.reputation_score %}
+                {% if user.reputation_score < 1 %}☆{% endif %}
+                {% if user.reputation_score >= 1 %}★{% endif %}
+                {% if user.reputation_score >= 2 %}★{% endif %}
+                {% if user.reputation_score >= 3 %}★{% endif %}
+                {% if user.reputation_score >= 4 %}★{% endif %}
+                {% if user.reputation_score >= 5 %}★{% endif %}
+              {% else %}
+                —
+              {% endif %}
+              ({{ user.review_count }})
+            </td>
+          </tr>
+          {% if user.name %}
+            <tr>
+              <th>Name</th>
+              <td>{{ user.name }}</td>
+            </tr>
+          {% endif %}
+          <tr>
+            <th>Payment Address</th>
+            <td>{{ user.payment_address }}</td>
+          </tr>
+          <tr>
+            <th>Balance</th>
+            <td>
+              {% if user.balance %}
+                Ξ {{ user.balance.confirmed_balance | to_eth }}
+                {% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
+                  (Ξ {{ user.balance.unconfirmed_balance | to_eth }})
+                {% endif %}
+              {% else %}
+                <span class="badge badge-warning">unknown</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% if user.location %}
+            <tr>
+              <th>Location</th>
+              <td>{{ user.location }}
+            </tr>
+          {% endif %}
+          <tr>
+            <th>Next Nonce</th>
+            <td>{{ tx_count | parse_int }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {% if user.is_app %}
+      <div class="col">
+        <table class="table table-hover table-responsive">
+          <tbody>
+            <tr>
+              <th>App Details</th>
+            </tr>
+            <tr>
+              <th>
+                {% if not user.featured %}
+                  Not
+                {% endif %}
+                Featured
+              </th>
+              {% if user.featured %}
+                <td>
+                  <form id="remove_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
+                    <input type="hidden" name="featured" value="">
+                  </form>
+                  <a href="#" class="remove_featured">(unfeature)</a>
+                </td>
+              {% else %}
+                <td>
+                  <form id="set_featured_form" method="POST" action="/{{ environment }}/app/featured">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
+                    <input type="hidden" name="featured" value="true">
+                  </form>
+                  <a href="#" class="set_featured">(feature)</a>
+                </td>
+              {% endif %}
+            </tr>
+            <tr>
+              <th>
+                {% if not user.blocked %}
+                  Not
+                {% endif %}
+                Blocked
+              </th>
+              <td>
+                {% if user.blocked %}
+                  <form id="remove_blocked_form_{{ user.toshi_id }}" method="POST" action="/{{ environment }}/app/blocked">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
+                    <input type="hidden" name="blocked" value="">
+                  </form>
+                  <a href="#" class="remove_blocked" data-toshi-id="{{ user.toshi_id }}">(unblock)</a>
+                {% else %}
+                  <form id="set_blocked_form_{{ user.toshi_id }}" method="POST" action="/{{ environment }}/app/blocked">
+                    <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
+                    <input type="hidden" name="blocked" value="true">
+                  </form>
+                  <a href="#" class="set_blocked" data-toshi-id="{{ user.toshi_id }}">(block)</a>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Categories
+              </td>
+              <td>
+                <form id="set_categories_form_{{ user.toshi_id }}" method="POST" action="/{{ environment }}/app/categories">
+                  <input type="hidden" name="toshi_id" value="{{ user.toshi_id }}">
+                  <input type="text" name="categories" value="{{ user.categories }}">
+                  <input type="submit" value="update">
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+  <nav class="nav">
+    <a class="nav-link active" data-toggle="tab" href="#txs" role="tab">Transactions</a>
+    <span class="nav-link">Reviews:</span>
+    <a class="nav-link" data-toggle="tab" href="#reviews_received" role="tab">Received ({{ reviews_received | length }})</a>
+    <a class="nav-link" data-toggle="tab" href="#reviews_given" role="tab">Given ({{ reviews_given | length }})</a>
+    <span class="nav-link">Reports:</span>
+    <a class="nav-link" data-toggle="tab" href="#reports_received" role="tab">Received ({{ reports_received | length }})</a>
+    <a class="nav-link" data-toggle="tab" href="#reports_given" role="tab">Given ({{ reports_given | length }})</a>
+  </nav>
+  <div class="tab-content">
+    <div class="tab-pane active" id="txs">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Hash</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Value</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% include 'tx_list_table.html' %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reviews_received">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>From</th>
+            <th>Rating</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for review in reviews_received %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ review.reviewer.toshi_id }}">
+                  <img src="{{ review.reviewer.avatar }}" width="30" height="30">
+                  @{{ review.reviewer.username or review.reviewer.toshi_id }}
+                </a>
+              </td>
+              <td>
+                {% if review.rating < 1 %}☆{% endif %}
+                {% if review.rating >= 1 %}★{% endif %}
+                {% if review.rating >= 2 %}★{% endif %}
+                {% if review.rating >= 3 %}★{% endif %}
+                {% if review.rating >= 4 %}★{% endif %}
+                {% if review.rating >= 5 %}★{% endif %}
+              </td>
+              <td>
+                {{ review.review }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reviews_given">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>To</th>
+            <th>Rating</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for review in reviews_given %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ review.reviewee.toshi_id }}">
+                  <img src="{{ review.reviewee.avatar }}" width="30" height="30">
+                  @{{ review.reviewee.username or review.reviewee.toshi_id }}
+                </a>
+              </td>
+              <td>
+                {% if review.rating < 1 %}☆{% endif %}
+                {% if review.rating >= 1 %}★{% endif %}
+                {% if review.rating >= 2 %}★{% endif %}
+                {% if review.rating >= 3 %}★{% endif %}
+                {% if review.rating >= 4 %}★{% endif %}
+                {% if review.rating >= 5 %}★{% endif %}
+              </td>
+              <td>
+                {{ review.review }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reports_received">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Reporter</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports_received %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ report.toshi_id }}">
+                  <img src="{{ report.avatar }}" width="30" height="30">
+                  @{{ report.username or report.toshi_id }}
+                </a>
+              </td>
+              <td>{{ report.details }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-pane" id="reports_given">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Reportee</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports_given %}
+            <tr>
+              <td>
+                <a href="/{{ environment }}/user/{{ report.toshi_id }}">
+                  <img src="{{ report.avatar }}" width="30" height="30">
+                  @{{ report.username or report.toshi_id }}
+                </a>
+              </td>
+              <td>{{ report.details }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-danger" role="alert">
+    <strong>Oh snap!</strong> user not found!
+  </div>
+{% endif %}
+</div>
+{% endblock %}

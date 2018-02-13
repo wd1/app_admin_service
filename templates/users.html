@@ -1,0 +1,114 @@
+{% extends "index.html" %}
+{% block body %}
+<nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+  <a class="navbar-brand" href="#">Users ({{ total }})</a>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+    </ul>
+    <form class="form-inline my-2 my-lg-0" id="filterform" action="/{{ environment }}/users" method="GET">
+      <label class="form-check-label">
+	<input type="checkbox" class="form-check-input" name="filter" value="is_app"{% if get_qargs(as_dict=True)['filter'] %} checked{% endif %}>
+	apps only
+      </label>
+      <input class="form-control mr-sm-2" name="query" type="text" placeholder="Search" value="{{ get_qargs(as_dict=True)['query'] }}">
+      {% for key, value in get_qargs(page=1,as_list=True,query=None,order_by=None,filter=None) %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+      {% endfor %}
+      <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+    </form>
+  </div>
+</nav>
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th><a class="" href="?{{ get_qargs(order_by='created') }}">Toshi Id</a></th>
+      <th><a class="" href="?{{ get_qargs(order_by='username') }}">Username</a></th>
+      <th>Balance</th>
+      <th><a class="" href="?{{ get_qargs(order_by='name') }}">Name</a></th>
+      <th><a class="" href="?{{ get_qargs(order_by='reputation_score') }}">Reputation</a></th>
+      <th>Is Bot</th>
+      <th><a class="" href="?{{ get_qargs(order_by='location') }}">Location</a></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>
+	<a href="/{{ environment }}/user/{{ user.toshi_id }}">
+	  <img src="{{ user.avatar }}" width="30" height="30">
+	  {{ user.toshi_id }}
+	</a>
+      </td>
+      <td>
+	<a href="/{{ environment }}/user/{{ user.toshi_id }}">
+	  @{{ user.username }}
+	</a>
+      </td>
+      <td>
+	{% if user.balance %}
+	Ξ {{ user.balance.confirmed_balance | to_eth(4) }}
+	{% if user.balance.unconfirmed_balance != user.balance.confirmed_balance %}
+	(Ξ {{ user.balance.unconfirmed_balance | to_eth(4) }})
+	{% endif %}
+	{% else %}
+	<span class="badge badge-warning">unknown</span>
+	{% endif %}
+      </td>
+      <td>
+	{{ user.name if user.name else '' }}
+      </td>
+      <td>
+	{% if user.reputation_score %}
+	{% if user.reputation_score < 1 %}☆{% endif %}
+	{% if user.reputation_score >= 1 %}★{% endif %}
+	{% if user.reputation_score >= 2 %}★{% endif %}
+	{% if user.reputation_score >= 3 %}★{% endif %}
+	{% if user.reputation_score >= 4 %}★{% endif %}
+        {% if user.reputation_score >= 5 %}★{% endif %}
+        {% else %}
+	—
+	{% endif %}
+	 ({{ user.review_count }})
+      </td>
+      <td>
+	{% if user.is_app %}
+	  t
+	{% endif %}
+      </td>
+      <td>
+	{{ user.location if user.location else '' }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<nav>
+  <ul class="pagination justify-content-center">
+    <li class="page-item{% if current_page == 1 %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/users?{{ get_qargs(page=1) }}">First</a>
+    </li>
+    <li class="page-item{% if current_page == 1 %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/users?{{ get_qargs(page=current_page - 1) }}">Previous</a>
+    </li>
+    {% for page_num in range(1, total_pages + 1) %}
+    {% if page_num < current_page - 5 and page_num + 10 < total_pages %}
+    {% elif page_num > current_page + 5 and page_num - 10 > 1 %}
+    {% else %}
+      <li class="page-item{% if page_num == current_page %} active{% endif %}">
+	<a class="page-link" href="/{{ environment }}/users?{{ get_qargs(page=page_num) }}">{{ page_num }}</a>
+      </li>
+    {% endif %}
+    {% endfor %}
+    <li class="page-item{% if current_page == total_pages %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/users?{{ get_qargs(page=current_page + 1) }}">Next</a>
+    </li>
+    <li class="page-item{% if current_page == total_pages %} disabled{% endif %}">
+      <a class="page-link" href="/{{ environment }}/users?{{ get_qargs(page=total_pages) }}">Last</a>
+    </li>
+  </ul>
+</nav>
+{% endblock %}
+{% block script %}
+  <script src="/public/txs.js"></script>
+{% endblock %}

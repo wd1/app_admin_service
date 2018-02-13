@@ -1,0 +1,8 @@
+env
+public
+source/static/*.min.js
+source/static/*.min.css
+*.pyc
+node_modules
+.runconfig
+heroku-buildpack-pgsql-stunnel

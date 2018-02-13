@@ -1,0 +1,78 @@
+{% extends "index.html" %}
+{% block body %}
+  <nav class="navbar navbar-toggleable-md navbar-light bg-faded">
+    <a class="navbar-brand" href="#">Admins ({{ admins | length }})</a>
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+        </ul>
+        <form class="form-inline my-2 my-lg-0" id="add_admin_form" action="/config/admin/add" method="POST">
+          <input class="form-control mr-sm-2" name="username" type="text" placeholder="@username">
+          <button class="btn btn-outline-success my-2 my-sm-0" type="submit">add</button>
+        </form>
+      </div>
+  </nav>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th><a class="" href="?">Toshi Id</a></th>
+        <th><a class="" href="?">Username</a></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for admin in admins %}
+        <tr>
+          <td>
+	    <a href="/{{ environment }}/user/{{ admin.toshi_id }}">
+	      <img src="{{ admin.avatar }}" width="30" height="30">
+	      {{ admin.toshi_id }}
+	    </a>
+          </td>
+          <td>
+	    <a href="/{{ environment }}/user/{{ admin.toshi_id }}">
+	      @{{ admin.username }}
+	    </a>
+          </td>
+          <td>
+            <form id="remove_admin_form_{{ admin.toshi_id }}" method="POST" action="/config/admin/remove">
+              <input type="hidden" name="toshi_id" value="{{ admin.toshi_id }}">
+            </form>
+            <a href="#" class="remove_admin" data-toshi-id="{{ admin.toshi_id }}">remove</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p>
+    <h3>Migrate users</h3>
+    <form method="POST" action="/migrate">
+      <label for="from">From:
+        <select name="from">
+          <option value="internal">Internal</option>
+          <option value="dev">Development</option>
+          <option value="mainnet">Mainnet</option>
+        </select>
+      </label>
+      <label for="to">To:
+        <select name="to">
+          <option value="internal">Internal</option>
+          <option value="dev">Development</option>
+          <option value="mainnet">Mainnet</option>
+        </select>
+      </label><br/>
+      <label for="users">migrate all users:
+        <input name="users" type="checkbox">
+      </label><br/>
+      <label for="apps">migrate all apps:
+        <input name="apps" type="checkbox">
+      </label><br/>
+      <label for="toshi_ids">Specific Toshi ids:
+        <textarea name="toshi_ids" rows="20" cols="80"></textarea>
+      </label><br/>
+      <input type="submit" value="migrate">
+    </form>
+  </p>
+{% endblock %}
+{% block script %}
+  <script src="/public/config.js"></script>
+{% endblock %}
